@@ -1,3 +1,27 @@
 spring:
   application:
     name: odc-connect
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Le schéma est géré par Flyway (src/main/resources/db/migration)
+      ddl-auto: validate
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Valeur de développement ; surchargée en production (application-prod.yaml)
+          jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8081/realms/odc/protocol/openid-connect/certs}
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true

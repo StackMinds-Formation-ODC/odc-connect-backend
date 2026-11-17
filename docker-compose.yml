@@ -1,4 +1,26 @@
+# Dev  : docker compose --profile dev  up --build
+# Prod : docker compose --profile prod up --build -d
+# Les variables viennent du fichier .env (voir .env.example).
+
 services:
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_NAME:-odc}
+      POSTGRES_USER: ${DB_USER:-odc}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requis (voir .env.example)}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-odc} -d ${DB_NAME:-odc}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    profiles: ["dev", "prod"]
 
   app:
     profiles: ["dev"]
@@ -7,11 +29,36 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-odc}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-odc}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./src:/app/src
+      - m2:/root/.m2
+    depends_on:
+      db:
+        condition: service_healthy
 
   app-prod:
     profiles: ["prod"]
     build:
       context: .
-      dockerfile: Dockerfile.prod
+      dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-odc}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-odc}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_JWK_SET_URI: ${JWT_JWK_SET_URI:?JWT_JWK_SET_URI requis en production}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  m2:

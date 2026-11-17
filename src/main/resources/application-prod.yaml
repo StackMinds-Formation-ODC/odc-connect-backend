@@ -1,0 +1,20 @@
+# Production : tout vient de variables d'environnement
+# (SPRING_DATASOURCE_URL / _USERNAME / _PASSWORD, JWT_JWK_SET_URI).
+# Un démarrage sans ces variables échoue volontairement.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWT_JWK_SET_URI}
+  jpa:
+    show-sql: false
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
